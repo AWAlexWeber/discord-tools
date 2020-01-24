@@ -7,8 +7,11 @@ import json
 # MySQL connector
 import mysql.connector
 
+<<<<<<< HEAD
 from datetime import datetime
 
+=======
+>>>>>>> 5547fd9ac7d25622a8cde568f2d2814b64a6895c
 # Statics
 TARGET_YEAR = 2019
 ZKILL_API_SLEEP_TIME = 1
@@ -27,9 +30,15 @@ kill_full_output = "/home/vsmanagementbot/StatisticGen/kill_output_format_full"
 # Building mysql connector
 def get_connector():
     mydb = mysql.connector.connect(
+<<<<<<< HEAD
         host="localhost",
         user="root",
         passwd="arancar_is_dumb"
+=======
+        host=,
+        user=,
+        passwd=
+>>>>>>> 5547fd9ac7d25622a8cde568f2d2814b64a6895c
     )
     return mydb
 
@@ -111,10 +120,6 @@ def fetch_esi_url(URL):
         now = datetime.now()
         dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
         print(dt_string)	
-
-        #print(str(request))
-        #print(request.status_code)
-        #print(request.json())
 
         return None
 
@@ -424,6 +429,7 @@ def pull_from_ccp_esi():
             now = datetime.now()
             dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
             print(dt_string)	
+
             time.sleep(0.01)
         
 
