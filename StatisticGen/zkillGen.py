@@ -1,21 +1,22 @@
 # File for performing API checks
 # importing the requests library
 import requests
+import os
 import time
+import sys
 import json
+from dotenv import load_dotenv
 
 # MySQL connector
 import mysql.connector
 
-<<<<<<< HEAD
 from datetime import datetime
 
-=======
->>>>>>> 5547fd9ac7d25622a8cde568f2d2814b64a6895c
 # Statics
 TARGET_YEAR = 2019
 ZKILL_API_SLEEP_TIME = 1
-ESI_API_SLEEP_TIME = 2
+ESI_API_SLEEP_TIME = 1
+ESI_FAILURE_SLEEP_TIME = 15
 
 STATIC_MONTH_LIST = [1,2,3,4,5,6,7,8,9,10,11,12]
 START_POINT = "J171818"
@@ -27,18 +28,14 @@ system_format_output = "/home/vsmanagementbot/StatisticGen/kill_output_format"
 
 kill_full_output = "/home/vsmanagementbot/StatisticGen/kill_output_format_full"
 
+load_dotenv()
+
 # Building mysql connector
 def get_connector():
     mydb = mysql.connector.connect(
-<<<<<<< HEAD
         host="localhost",
-        user="root",
-        passwd="arancar_is_dumb"
-=======
-        host=,
-        user=,
-        passwd=
->>>>>>> 5547fd9ac7d25622a8cde568f2d2814b64a6895c
+        user=os.environ['MYSQL_SERVER_USERNAME'],
+        passwd=os.environ['MYSQL_SERVER_PASSWORD']
     )
     return mydb
 
@@ -119,8 +116,8 @@ def fetch_esi_url(URL):
         print("SERIOUS FAILURE HAS OCCURED")
         now = datetime.now()
         dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
-        print(dt_string)	
-
+        print(dt_string)
+        time.sleep(ESI_FAILURE_SLEEP_TIME)
         return None
 
     data = request.json()
@@ -389,7 +386,7 @@ def pull_from_ccp_esi():
     kill_output = open(kill_full_output, "a")
 
     count = 0
-    target_value = 60616
+    target_value = 232000
     num_kills = len(results) 
     for kill in results:
 
@@ -477,12 +474,53 @@ def get_full_length():
 
     print(count)
 
+def process_full_esi_output():
+    
+    kill_output = open(kill_full_output, "r")
+
+    mydb = get_connector()
+    cursor = mydb.cursor()
+
+    count = 0
+    for line in kill_output.readlines():
+        count = count + 1
+
+        line = line.replace("u\'", "\'")
+        line = line.replace("\'", "\"")
+        line = line.replace("True", "true")
+        line = line.replace("False", "false")
+
+        line_json = json.loads(line)
+
+        character_id = -1
+        if character_id in line_json['victim']:
+            character_id = line_json['victim']['character_id']
+
+        corp_id = line_json['victim']['corporation_id']
+        damage = line_json['victim']['damage_taken']
+        killmail_id = line_json['killmail_id']
+        ship_id = line_json['victim']['ship_type_id']
+        killmail_time = line_json['killmail_time']
+
+        month = killmail_time[5:7]
+        day = killmail_time[8:10]
+
+        killmail_time = killmail_time[0:10] + " " + killmail_time[11:len(killmail_time)-1]
+
+        update_query = "UPDATE db_stats.tb_kills_full SET total_damage = %s, killmail_day = %s, killmail_month = %s, victim_character_id = %s, victim_corporation_id = %s, killmail_time = %s, victim_ship_id = %s WHERE kill_id = %s"
+        cursor.execute(update_query, (damage, day, month, character_id, corp_id, killmail_time, ship_id, killmail_id))
+        mydb.commit()
+
+        print(count)
+
+    print(count)
+    kill_output.close()
 
 # Main
 # Generating container
 
 # Main processing
-region_dictionary = gen_region_dictionary(regionclass_file_path)
+#region_dictionary = gen_region_dictionary(regionclass_file_path)
 #system_container = gen_system_container(wspace_file_path, region_dictionary)
 #pull_wspace_data(system_container)
 
@@ -494,4 +532,6 @@ region_dictionary = gen_region_dictionary(regionclass_file_path)
 
 # Requesting CCP's ESI for information
 #get_full_length()
-pull_from_ccp_esi()
+#pull_from_ccp_esi()
+
+process_full_esi_output()

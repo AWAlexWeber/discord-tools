@@ -23,18 +23,7 @@ signal.signal(signal.SIGINT, signal_handler)
 # <<<---------- Signal Complt ---------->>> #
 
 # <<<---------- Client Set-Up ---------->>> #
-def load_chain_ping(client, chain_ping):
-    ### Handling the discord bot posting the chain
-    @client.event
-    async def on_message(message):
-
-        discord_map = os.getenv("MAP_DISC_ID")
-        if str(message.channel.id) == discord_map:
-            chain_ping.process_map_update(message)
-
-    return client
-
-def load_client():
+def load_client(chain_ping):
 
     ### Initializing client; will run with token in main
     client = discord.Client()
@@ -42,6 +31,7 @@ def load_client():
     @client.event
     async def on_ready():
         print_log("Viper Sovereign Management - Online ")
+        chain_ping.initialize_discord_client(client)
 
     ### Handling the welcome message for the VS Recruitment Discord
     @client.event
@@ -60,6 +50,39 @@ def load_client():
             print_log("Logging member joining or disconnecting from VS Comms")
             await log_channel_change(member, before, after)
 
+    @client.event
+    async def on_message(inbound_message):
+        # Different handlers for different guilds
+        message_content = inbound_message.content.lower()
+        time.sleep(0.1)
+
+        if "!toxic" in message_content:
+            print_log("Reporting with the following content: " + message_content)
+
+            if "!toxic razor" in message_content:
+                message_reason = message_content[message_content.index("razor")+6:]
+                await inbound_message.delete()
+                await send_message(260165273879838721,"You have been reported for being toxic. Please refrain from being toxic. The reason given was: " + message_reason + ".", client)
+
+            if "!toxic arancar" in message_content:
+                message_reason = message_content[message_content.index("arancar")+7:]
+                await inbound_message.delete()
+                await send_message(204376593408327680,"You have been reported for being toxic. Please refrain from being toxic. The reason given was:" + message_reason + ".", client)
+
+
+        if "!wholesome" in message_content:
+            print_log("Reporting with the following content: " + message_content)
+
+            if "!wholesome razor" in message_content:
+                message_reason = message_content[message_content.index("razor")+5:]
+                await inbound_message.delete()
+                await send_message(260165273879838721,"You have been reported for being wholesome :). Please continue to be wholesome. The reason given was:" + message_reason + ".", client)
+
+            if "!wholesome arancar" in message_content:
+                message_reason = message_content[message_content.index("arancar")+7:]
+                await inbound_message.delete()
+                await send_message(204376593408327680,"You have been reported for being wholesome :). Please continue to be wholesome. The reason given was:" + message_reason + ".", client)
+
     return client
 # <<<---------- Completed Set-Up ---------->>> #
 
@@ -72,8 +95,7 @@ time.sleep(1)
 ### Loading our client variables
 token = os.getenv("DISCORD_TOKEN")
 chain_ping = ChainPing()
-client = load_client()
-client = load_chain_ping(client, chain_ping)
+client = load_client(chain_ping)
 
 async def start_client():
     await client.start(token)
@@ -81,11 +103,10 @@ async def start_client():
 def start_client_loop(loop):
     loop.run_forever()
 
-def start_chain_ping():
+def start_chain_ping(loop):
     print_log("Chain Ping - Online")
-    time.sleep(5)
-    while (chain_ping.process_chain()):
-        chain_ping.process_chain()
+    while(chain_ping.process_chain(loop)):
+        chain_ping.process_chain(loop)
 
 def init():
     asyncio.get_child_watcher()
@@ -95,7 +116,7 @@ def init():
     thread_client = threading.Thread(target=start_client_loop, args=(loop,))
     thread_client.start()
 
-    thread_chain = threading.Thread(target=start_chain_ping, args=())
+    thread_chain = threading.Thread(target=start_chain_ping, args=(loop,))
     thread_chain.start()
 
 init()

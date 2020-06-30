@@ -13,6 +13,12 @@ def print_log(text):
     f.close()
     return
 
+async def send_channel_message_embed(channel, embeded):
+    await channel.send(embed=embeded)
+
+async def send_channel_message(channel, message):
+    await channel.send(message)
+
 async def send_message(user, message, client):
     user = client.get_user(user)
     dm_channel = await user.create_dm()
